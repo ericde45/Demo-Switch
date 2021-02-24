@@ -1,0 +1,3 @@
+created, tested and working on OFW 10.0.3 / Atmosphere 17.1
+Running in applet mode in the hbmenu v3.4.0 , safe for all users.
+Sorry for the heavy size of the NRO but OPENGL is there...
