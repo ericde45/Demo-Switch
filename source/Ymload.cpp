@@ -34,11 +34,12 @@
 *
 -----------------------------------------------------------------------------*/
 
+#define _CRT_SECURE_NO_WARNINGS
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include "YmMusic.h"
-#include "LZH.H"
+#include "LZH/LZH.H"
 
 static	ymu16 ymVolumeTable[16] =
 {	62,161,265,377,580,774,1155,1575,2260,3088,4570,6233,9330,13187,21220,32767};
@@ -57,9 +58,9 @@ static	void	signeSample(ymu8 *ptr,yms32 size)
 		}
 }
 
-char	*mstrdup(char *in)
+char	*mstrdup(const char *in)
 {
-	const int size = strlen(in)+1;
+	const int size = (int)strlen(in)+1;
 	char *out = (char*)malloc(size);
 	if (out)
 		strcpy(out,in);
@@ -133,14 +134,6 @@ unsigned char	*CYmMusic::depackFile(ymu32 checkOriginalSize)
 
 		fileSize = (ymu32)-1;
 
-		if (pHeader->level != 0)					// NOTE: Endianness works because value is 0
-		{ // Compression LH5, header !=0 : Error.
-			free(pBigMalloc);
-			pBigMalloc = NULL;
-			setLastError("LHARC Header must be 0 !");
-			return NULL;
-		}
-
 		fileSize = ReadLittleEndian32((ymu8*)&pHeader->original);
 		pNew = (ymu8*)malloc(fileSize);
 		if (!pNew)
@@ -151,12 +144,10 @@ unsigned char	*CYmMusic::depackFile(ymu32 checkOriginalSize)
 			return NULL;
 		}
 
-		pSrc = pBigMalloc+sizeof(lzhHeader_t)+pHeader->name_lenght;			// NOTE: Endianness works because name_lenght is a byte
-
-		pSrc += 2;		// skip CRC16
-
+		pSrc = pBigMalloc + pHeader->size;
 		ymu32		packedSize = ReadLittleEndian32((ymu8*)&pHeader->packed);
 
+		pSrc += 2;		// skip CRC16
 		checkOriginalSize -= ymu32(pSrc - pBigMalloc);
 
 		if (packedSize > checkOriginalSize)
@@ -166,7 +157,7 @@ unsigned char	*CYmMusic::depackFile(ymu32 checkOriginalSize)
 		if (packedSize <= checkOriginalSize)
 		{
 			// alloc space for depacker and depack data
-			CLzhDepacker *pDepacker = new CLzhDepacker;	
+			CLzhDepacker *pDepacker = new CLzhDepacker;
 			const bool bRet = pDepacker->LzUnpack(pSrc,packedSize,pNew,fileSize);
 			delete pDepacker;
 
@@ -269,7 +260,7 @@ ymbool	CYmMusic::ymDecode(void)
  ymu32 sampleSize;
  yms32 tmp;
  ymu32 id;
- 
+
 
 		id = ReadBigEndian32((unsigned char*)pBigMalloc);
 		switch (id)
@@ -540,7 +531,7 @@ ymbool	CYmMusic::ymDecode(void)
 		return YMTRUE;
  }
 
- 
+
 ymbool	CYmMusic::checkCompilerTypes()
 {
 	setLastError("Basic types size are not correct (check ymTypes.h)");
@@ -610,7 +601,7 @@ FILE	*in;
 		fclose(in);
 
 		//---------------------------------------------------
-		// Transforme les donn‚es en donn‚es valides.
+		// Transforme les donn?es en donn?es valides.
 		//---------------------------------------------------
 		pBigMalloc = depackFile(fileSize);
 		if (!pBigMalloc)
@@ -619,7 +610,7 @@ FILE	*in;
 		}
 
 		//---------------------------------------------------
-		// Lecture des donn‚es YM:
+		// Lecture des donn?es YM:
 		//---------------------------------------------------
 		if (!ymDecode())
 		{
@@ -661,7 +652,7 @@ ymbool	CYmMusic::loadMemory(void *pBlock,ymu32 size)
 		memcpy(pBigMalloc,pBlock,size);
 
 		//---------------------------------------------------
-		// Transforme les donn‚es en donn‚es valides.
+		// Transforme les donn?es en donn?es valides.
 		//---------------------------------------------------
 		pBigMalloc = depackFile(size);
 		if (!pBigMalloc)
@@ -670,7 +661,7 @@ ymbool	CYmMusic::loadMemory(void *pBlock,ymu32 size)
 		}
 
 		//---------------------------------------------------
-		// Lecture des donn‚es YM:
+		// Lecture des donn?es YM:
 		//---------------------------------------------------
 		if (!ymDecode())
 		{
